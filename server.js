@@ -163,7 +163,29 @@ app.post('/api/medication-schedule/complete', async (req, res) => {
         if (conn) conn.release();
     }
 });
+// [추가됨] 통계용 복약 전체 기록 조회 API
+app.get('/api/medication-history/:boxId', async (req, res) => {
+    let conn;
+    try {
+        const { boxId } = req.params;
+        conn = await pool.getConnection();
+        
+        // 전체 스케줄 기록 조회 (최신순)
+        const history = await conn.query(
+            `SELECT * FROM medication_schedule 
+             WHERE box_id = ? 
+             ORDER BY scheduled_time DESC`,
+            [boxId]
+        );
 
+        res.json({ success: true, data: history });
+    } catch (error) {
+        console.error('Error fetching history:', error);
+        res.status(500).json({ success: false, error: error.message });
+    } finally {
+        if (conn) conn.release();
+    }
+});
 // 서버 시작
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
