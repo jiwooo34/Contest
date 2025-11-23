@@ -2,24 +2,25 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>스마트 복약 알림이</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #4A90E2; /* 복용 전 (파랑) */
-            --success-color: #2ECC71; /* 복용 완료 (초록) */
-            --bg-color: #F0F4F8;
-            --card-bg: #FFFFFF;
+            --primary-color: #4A90E2; /* 복용 전 */
+            --primary-light: #EBF5FF;
+            --success-color: #2ECC71; /* 복용 완료 */
+            --success-light: #E8F8F5;
             --text-main: #2C3E50;
             --text-sub: #7F8C8D;
+            --card-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -29,260 +30,243 @@
         }
 
         .app-container {
-            background: var(--card-bg);
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: var(--card-shadow);
             width: 100%;
-            max-width: 480px;
+            max-width: 420px; /* 모바일 최적화 너비 */
             overflow: hidden;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
         }
 
-        /* 헤더 영역 */
-        header {
-            padding: 25px;
+        /* 상태바 */
+        .connection-bar {
+            font-size: 13px;
+            font-weight: 500;
             text-align: center;
-            border-bottom: 1px solid #eee;
+            padding: 10px;
+            background: #f1f3f5;
+            color: #868e96;
+            transition: all 0.3s;
+        }
+        .connection-bar.connected { background: #E8F5E9; color: #2E7D32; }
+        .connection-bar.error { background: #FFEBEE; color: #C62828; }
+
+        /* 헤더 */
+        header {
+            padding: 30px 20px 10px;
+            text-align: center;
         }
 
         header h1 {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 22px;
+            font-weight: 800;
             color: var(--text-main);
+            margin-bottom: 5px;
         }
 
         header p {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-sub);
-            margin-top: 5px;
+            font-weight: 500;
         }
 
         /* 메인 상태 카드 */
         .status-card {
-            padding: 40px 20px;
+            padding: 30px 20px;
             text-align: center;
-            transition: all 0.3s ease;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
-        .icon-wrapper {
-            width: 120px;
-            height: 120px;
+        .icon-circle {
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
-            margin: 0 auto 25px;
+            background-color: #f8f9fa;
+            color: #dee2e6;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 50px;
-            transition: all 0.3s ease;
+            font-size: 60px;
+            margin-bottom: 25px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.03);
         }
 
         .status-text h2 {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            transition: color 0.3s;
         }
 
         .status-text p {
             font-size: 16px;
             color: var(--text-sub);
+            line-height: 1.5;
         }
 
-        /* 상태별 스타일 (JS로 토글) */
-        /* 상태 1: 약이 있음 (Pills Present) */
-        .status-card[data-state="has-pills"] .icon-wrapper {
-            background-color: rgba(74, 144, 226, 0.1);
+        /* 상태별 스타일 */
+        /* 약 있음 */
+        .status-card[data-state="has-pills"] .icon-circle {
+            background-color: var(--primary-light);
             color: var(--primary-color);
-            animation: bounce 2s infinite;
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.2);
+            animation: pulse-blue 2s infinite;
         }
-        .status-card[data-state="has-pills"] .status-text h2 {
-            color: var(--primary-color);
-        }
+        .status-card[data-state="has-pills"] .status-text h2 { color: var(--primary-color); }
 
-        /* 상태 2: 복용 완료 (Empty) */
-        .status-card[data-state="taken"] .icon-wrapper {
-            background-color: rgba(46, 204, 113, 0.1);
+        /* 복용 완료 */
+        .status-card[data-state="taken"] .icon-circle {
+            background-color: var(--success-light);
             color: var(--success-color);
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.2);
         }
-        .status-card[data-state="taken"] .status-text h2 {
-            color: var(--success-color);
-        }
+        .status-card[data-state="taken"] .status-text h2 { color: var(--success-color); }
 
         /* 정보 그리드 */
+        .info-container {
+            padding: 20px;
+            background-color: #ffffff;
+        }
+
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            padding: 20px;
-            background-color: #FAFBFC;
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
-        .info-item {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #E1E8ED;
+        .info-box {
+            background: #F8F9FA;
+            padding: 16px;
+            border-radius: 16px;
             text-align: center;
+            border: 1px solid #edf2f7;
         }
 
         .info-label {
             font-size: 12px;
             color: var(--text-sub);
-            margin-bottom: 5px;
+            margin-bottom: 6px;
+            font-weight: 600;
         }
 
         .info-value {
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 17px;
+            font-weight: 700;
             color: var(--text-main);
         }
 
-        /* 하단 컨트롤 */
-        .controls {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            border-radius: 12px;
-            border: none;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        button:active { transform: scale(0.98); }
-
-        .btn-primary {
-            background-color: var(--text-main);
-            color: white;
-        }
-
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--text-sub);
-            border: 1px solid #ddd;
-        }
-
-        /* 연결 상태 표시 */
-        .connection-bar {
-            font-size: 12px;
+        .refresh-msg {
             text-align: center;
-            padding: 8px;
-            background: #eee;
-            color: #666;
+            font-size: 12px;
+            color: #adb5bd;
+            margin-top: 10px;
         }
-        .connection-bar.connected { background: #E8F5E9; color: #2E7D32; }
-        .connection-bar.error { background: #FFXBXB; color: #C0392B; }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        /* 애니메이션 */
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(74, 144, 226, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
+        }
+
+        /* 모바일 대응 미디어 쿼리 */
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+                background: #ffffff; /* 모바일은 전체 흰 배경 */
+            }
+            .app-container {
+                max-width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .status-card {
+                padding-bottom: 0;
+            }
+            .icon-circle {
+                width: 120px;
+                height: 120px;
+                font-size: 50px;
+            }
+            header h1 { font-size: 20px; }
+            .info-container {
+                padding-bottom: 40px; /* 하단 여백 확보 */
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <div id="connectionStatus" class="connection-bar">연결 대기 중...</div>
+        <div id="connectionStatus" class="connection-bar">
+            <i class="fas fa-circle-notch fa-spin"></i> 연결 시도 중...
+        </div>
 
         <header>
             <h1>스마트 복약 도우미</h1>
-            <p id="currentDate">날짜 로딩 중...</p>
+            <p id="currentDate">날짜 불러오는 중...</p>
         </header>
 
-        <div class="status-card" id="statusCard" data-state="has-pills">
-            <div class="icon-wrapper">
+        <div class="status-card" id="statusCard" data-state="loading">
+            <div class="icon-circle">
                 <i id="statusIcon" class="fas fa-pills"></i>
             </div>
             <div class="status-text">
-                <h2 id="mainStatusText">상태 확인 중...</h2>
-                <p id="subStatusText">센서 데이터를 불러오는 중입니다.</p>
+                <h2 id="mainStatusText">상태 확인 중</h2>
+                <p id="subStatusText">센서 데이터를 불러오고 있습니다...</p>
             </div>
         </div>
 
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-label">최근 감지 시간</div>
-                <div class="info-value" id="lastUpdateTime">-</div>
+        <div class="info-container">
+            <div class="info-grid">
+                <div class="info-box">
+                    <div class="info-label">최근 감지</div>
+                    <div class="info-value" id="lastUpdateTime">-</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">기기 ID</div>
+                    <div class="info-value">BOX-01</div>
+                </div>
             </div>
-            <div class="info-item">
-                <div class="info-label">약통 ID</div>
-                <div class="info-value" id="boxIdDisplay">BOX-01</div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <button class="btn-primary" onclick="toggleConnection()" id="connectBtn">모니터링 시작</button>
-            <button class="btn-secondary" onclick="setServerUrl()">서버 주소 설정</button>
+            <p class="refresh-msg">데이터는 실시간으로 자동 갱신됩니다.</p>
         </div>
     </div>
 
     <script>
-        // 기본 설정
-        let isConnected = false;
-        let intervalId = null;
-        // 로컬호스트 또는 사용자 설정 URL
-        let serverUrl = localStorage.getItem('serverUrl') || 'http://localhost:3000';
-        const BOX_ID = 1; // 기본 약통 ID
-
-        // 날짜 표시
+        // --- 설정 및 변수 ---
+        const BOX_ID = 1;
+        
+        // 날짜 표시 (요일 포함)
         const now = new Date();
-        document.getElementById('currentDate').innerText = now.toLocaleDateString('ko-KR', { 
-            year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' 
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        document.getElementById('currentDate').innerText = now.toLocaleDateString('ko-KR', options);
+
+        // --- 앱 실행 로직 ---
+        window.addEventListener('load', () => {
+            fetchSensorData(); // 즉시 실행
+            setInterval(fetchSensorData, 2000); // 2초마다 반복
         });
 
-        // 연결 토글 함수
-        function toggleConnection() {
-            if (isConnected) {
-                disconnect();
-            } else {
-                connect();
-            }
-        }
-
-        // 모니터링 시작
-        function connect() {
-            isConnected = true;
-            document.getElementById('connectBtn').textContent = '모니터링 중지';
-            document.getElementById('connectBtn').style.backgroundColor = '#E74C3C'; // 중지 색상(빨강)
-            
-            updateConnectionStatus(true);
-            fetchSensorData(); // 즉시 실행
-            intervalId = setInterval(fetchSensorData, 2000); // 2초마다 갱신
-        }
-
-        // 모니터링 중지
-        function disconnect() {
-            isConnected = false;
-            document.getElementById('connectBtn').textContent = '모니터링 시작';
-            document.getElementById('connectBtn').style.backgroundColor = '#2C3E50'; // 기본 색상
-            
-            if (intervalId) clearInterval(intervalId);
-            document.getElementById('connectionStatus').className = 'connection-bar';
-            document.getElementById('connectionStatus').innerText = '모니터링 중지됨';
-        }
-
-        // 서버 주소 설정
-        function setServerUrl() {
-            const newUrl = prompt('서버 URL을 입력하세요:', serverUrl);
-            if (newUrl) {
-                serverUrl = newUrl.replace(/\/$/, ""); // 끝에 슬래시 제거
-                localStorage.setItem('serverUrl', serverUrl);
-                alert('서버 주소가 변경되었습니다: ' + serverUrl);
-            }
-        }
-
-        // 데이터 가져오기 (Server.js 엔드포인트에 맞춤)
+        // 데이터 가져오기 함수
         async function fetchSensorData() {
             try {
-                // server.js의 /api/sensor-data/latest/:boxId 엔드포인트 호출
-                const response = await fetch(`${serverUrl}/api/sensor-data/latest/${BOX_ID}`);
+                // 현재 URL 기준 상대 경로로 요청 (배포 환경 호환)
+                const response = await fetch(`/api/sensor-data/latest/${BOX_ID}`);
                 
-                if (!response.ok) throw new Error('서버 응답 없음');
+                if (!response.ok) throw new Error('서버 응답 실패');
 
                 const result = await response.json();
                 
@@ -290,81 +274,61 @@
                     updateConnectionStatus(true);
                     updateUI(result);
                 }
-
             } catch (error) {
-                console.error('Fetch Error:', error);
+                console.error('Connection Error:', error);
                 updateConnectionStatus(false);
             }
         }
 
-        // UI 업데이트 로직
+        // 화면 업데이트 함수
         function updateUI(data) {
-            // server.js에서 compartment_status 테이블을 조회합니다.
-            // 여기서는 compartments 배열의 첫 번째 칸막이 상태를 기준으로 판단한다고 가정합니다.
-            // DB 구조상 is_open이 1이면 열림(비어있음/복용함), 0이면 닫힘(약 있음)일 수도 있고,
-            // IR 센서 로직에 따라 반대일 수도 있습니다. 
-            // *가정: 센서값(pillDetected)이 1이면 약이 있음, 0이면 없음*
-            
-            // 만약 server.js가 'sensor' 객체 안에 IR 센서값을 바로 준다면 data.sensor.값 을 사용하세요.
-            // 여기서는 가장 최근 칸막이 상태를 확인합니다.
             const compartments = data.compartments;
             let hasPills = false;
 
+            // [상태 판단 로직]
+            // DB의 is_open 값이 0이면 '닫힘(약 있음)'으로 간주
             if (compartments && compartments.length > 0) {
-                // 예시: is_open이 0이면 닫혀있고 약이 보관중이라고 가정
-                // 실제 아두이노 로직에 맞춰 이 조건문을 수정해야 합니다.
-                // 현재 가정: Compartment Status가 있으면 약이 있는 것으로 간주
                 hasPills = compartments[0].is_open === 0; 
-                
-                // 주의: 사용자의 IR 센서 로직이 '1 = 장애물(약) 감지'라면 
-                // DB에 저장된 값이 어떻게 매핑되는지 확인 필요.
-                // 일단 테스트를 위해 임의의 로직을 사용합니다.
-            } else if (data.sensor) {
-                // 센서 로그가 있다면 시간 업데이트
-                const time = new Date(data.sensor.timestamp);
-                document.getElementById('lastUpdateTime').innerText = time.toLocaleTimeString();
             }
 
-            // --- [핵심 로직] 상태에 따른 UI 변경 ---
+            // UI 요소
             const statusCard = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const mainText = document.getElementById('mainStatusText');
             const subText = document.getElementById('subStatusText');
+            const timeDisplay = document.getElementById('lastUpdateTime');
 
-            // ※ 중요: 아두이노에서 보낸 IR 센서값이 '1'일 때 약이 있는 것이라면 아래 조건을 사용하세요.
-            // 테스트용: 현재는 랜덤하게 상태를 보여주거나, 실제 데이터 필드(data.sensor.value 등)로 교체해야 합니다.
-            // server.js의 api 응답 구조를 기반으로 필드명을 맞춰주세요.
-            
-            // (가상 로직) 만약 실제 IR값이 넘어온다면: 
-            // const irValue = data.sensor.ir_value; // DB 컬럼명 확인 필요
-            // hasPills = (irValue == 1);
-            
-            // 데모를 위해 compartments 데이터가 존재하면 '약 있음'으로 표시하겠습니다.
-            hasPills = (compartments && compartments.length > 0); 
+            // 시간 업데이트
+            if (data.sensor && data.sensor.timestamp) {
+                const time = new Date(data.sensor.timestamp);
+                timeDisplay.innerText = time.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
 
+            // 상태별 디자인 적용
             if (hasPills) {
-                // 약이 들어있는 상태
+                // 약 보관 중
                 statusCard.setAttribute('data-state', 'has-pills');
-                icon.className = 'fas fa-pills';
-                mainText.innerText = '약이 보관 중입니다';
-                subText.innerText = '잊지 말고 복용해 주세요!';
+                icon.className = 'fas fa-capsules'; // 알약 아이콘
+                mainText.innerText = '복약 전입니다';
+                subText.innerText = '약통에 약이 보관되어 있습니다.\n잊지 말고 챙겨 드세요!';
             } else {
-                // 약이 없는 상태 (복용 완료)
+                // 복용 완료
                 statusCard.setAttribute('data-state', 'taken');
-                icon.className = 'fas fa-check';
+                icon.className = 'fas fa-check-circle'; // 체크 아이콘
                 mainText.innerText = '복용 완료';
-                subText.innerText = '약통이 비어 있습니다.';
+                subText.innerText = '약통이 비어 있습니다.\n오늘도 건강한 하루 보내세요!';
             }
         }
 
+        // 연결 상태 표시 함수
         function updateConnectionStatus(isLive) {
             const statusDiv = document.getElementById('connectionStatus');
             if (isLive) {
                 statusDiv.className = 'connection-bar connected';
-                statusDiv.innerText = '● 서버와 실시간 연결됨';
+                statusDiv.innerHTML = '<i class="fas fa-wifi"></i> 실시간 모니터링 중';
             } else {
                 statusDiv.className = 'connection-bar error';
-                statusDiv.innerText = '● 서버 연결 끊김 (재시도 중...)';
+                statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 연결 대기 중...';
             }
         }
     </script>
